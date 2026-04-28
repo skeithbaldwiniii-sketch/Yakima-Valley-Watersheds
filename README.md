@@ -3,9 +3,11 @@
 
 Modeling watershed and drainage systems using DEM-based tools (flow direction, accumulation, watershed) to evaluate water accessibility for agricultural sites 
 
-This was my first final project in the Geographical Information Systems certificate program at Northern Virginia Community College, which I completed December 2024. It is now April 2026, so my memory may be a little fuzzy but it is also a walk down memory lane. 
+This project focuses on modeling watershed and drainage systems in Yakima County using DEM-based tools (flow direction, flow accumulation, watershed) to better understand water accessibility for hop farms.
 
-The reason I picked this topic was because it combined the field I was a part of when I started the certificate program, with the field I wished to jump into. 
+This was my first final project in the Geographical Information Systems certificate program at Northern Virginia Community College, completed in December 2024. Looking back on it now, it’s a good mix of where I came from (working in the brewing industry) and where I wanted to go (GIS and environmental analysis).
+
+## Why This Matters
 
 From *The Hop Grower's Handbook*:
 
@@ -13,21 +15,26 @@ From *The Hop Grower's Handbook*:
 
 > “A single hop needs about 16 gallons of water a week. This means a 1-acre hop yard containing approximately nine-hundred plants could need access to almost 15,000 gallons of water on a weekly basis.” – Eyck and Gehring, 58
 
-With these two quotes in mind, it is important to consider a) where the water is coming from and b) what is downstream/where the water is going. 
+Hops require a large and consistent water supply, while also needing effective drainage. That raised two key questions for me:
 
-First step was isolating the county & its boundaries. Part of this was with the intention of having a defining line to use with the clip tool, the other intention was with presentation in mind. My thought was that if I dulled the surrounding counties with a bland color, it would draw attention to Yakima, which is our county of focus. 
+- Where is the water coming from?
+- Where is it going after it moves through the system?
+
+Understanding that relationship is critical for both farm productivity and long-term water management.
+
+## Initial Data & Setup
+
+I started by isolating Yakima County and its surrounding counties using boundary data from the Washington State Geospatial Open Data Portal. This gave me a clean study area and also helped with visualization by muting surrounding regions.
 
 <img width="531" height="359" alt="Screenshot 2024-11-30 090029" src="https://github.com/user-attachments/assets/243f6d4e-981c-4086-9fce-6e1d2e793209" />
 
 
-I got these county boundaries from the Washington State Geospatial Open Data Portal. After I added to ArcGIS Pro, I used the "create layer from selection" tool to isolate Yakima County and the surrounding counties 
-
-Next step was downloading the layer of all the streams in the state & adding to the project. This was also available on the Washington State Geospatial Open Data Portal labeled Hydrography. 
+Next, I added a statewide hydrography layer to get an initial sense of stream locations.
 
 <img width="531" height="359" alt="Screenshot 2024-11-30 090839" src="https://github.com/user-attachments/assets/51f6775b-8f34-44be-ba62-0aba0bfc77a7" />
 
 
-Next, I needed to locate all of the commercial farms that grow hops. I was able to find a list of these on the Yakima Chief Ranches website under 'Our History'. I then plugged all of these farms into Google Earth, dropped a pin, then exported the group of pins as a KMZ file to be added into ArcGIS Pro. I then used the "KML to layer" tool to convert the format into a layer shapefile that allowed me to adjust the Symbology. 
+After that, I mapped the hop farms themselves. I pulled a list of commercial farms from Yakima Chief Ranches, located them in Google Earth, and exported the points as a KMZ file. I then converted that into a shapefile in ArcGIS Pro so I could work with it more easily.
 
 <img width="550" height="415" alt="Screenshot 2024-11-30 091749" src="https://github.com/user-attachments/assets/03956f15-1d0e-45d3-baed-5556ce3ce0fd" />
 
@@ -38,8 +45,7 @@ Next, I needed to locate all of the commercial farms that grow hops. I was able 
 
 <img width="531" height="359" alt="Screenshot 2024-11-30 095110" src="https://github.com/user-attachments/assets/cf7027d1-ce86-4f51-b59c-12b8d4df28df" />
 
-
-Seeing all of these farms displayed in conjunction with the streams layer, there's a fair amount of distance between the farms and the streams themselves. So I dug a little further to find a much more detailed layer of the hydrography. I found this on the Department of Natural Resources GIS Open Data portal. 
+At this stage, I noticed that many farms didn’t appear to sit directly near mapped streams, which led me to look for a more detailed hydrography dataset from the Department of Natural Resources.
 
 <img width="530" height="360" alt="Screenshot 2024-11-30 091104" src="https://github.com/user-attachments/assets/82854a63-e7fe-44d5-a182-51cb622a95f5" />
 
@@ -48,16 +54,30 @@ Seeing all of these farms displayed in conjunction with the streams layer, there
 <img width="530" height="360" alt="Screenshot 2024-11-30 091429" src="https://github.com/user-attachments/assets/82df3c35-986e-4c45-8901-33fb71d0a287" />
 
 
-Next, in an attempt to practice raster analysis, I downloaded the DEM of the area from the National Map. 
-The tools I used were as follows:
-1. Fill - this fills gaps in the DEM, I didn't specify Z value because everything needs to be filled
-2. Flow Direction - I used a D8 flow direction type, which turned every cell into a value from 1 to 8, where the number refers to a directional arrow from that cell. I used the raster produced from the fill step as the input raster. 
-3. Flow Accumulation - This calculates a number for each cell based on the accumulated weight of cells flowing downflow into it. The input rasteer I used was produced in running the flow direction step
-4. Raster Calculator (>= 50000) - this created a binary raster for where accumulation points were above 50000, and places where it was not. Input raster was the one produced by the Flow Accumulation step.
-5. Stream Order - This gave me a raster made up of jagged line segments representing rivers. This one requires both the raster produced by the raster calculator step, and the flow direction raster. 
-6. Stream to Feature - this step turns the raster produced by the Stream Oder tool into polylines.
+## Raster-Based Hydrology Workflow
 
-These series of tools providied me a layer of the streams by using the DEM raster. With this in hand, I can determine the watershed within the valley. To do this, I picked one farm, I just went with Perrault Farms, and used the create layer from selection tool to isolate the individual point. I then used the snap pour point tool, which gave me a pour point to apply to the watershed tool, which gave me a picture of the entire watershed.
+To go beyond existing vector data, I brought in a DEM from the US National Map and built a hydrology model from scratch.
+
+The workflow was:
+
+1. Fill – removed sinks in the DEM to ensure continuous flow
+2. Flow Direction (D8) – assigned each cell a direction of steepest descent
+3. Flow Accumulation – calculated how much upstream area contributes flow into each cell
+4. Raster Calculator (≥ 50,000) – isolated major flow paths
+5. Stream Order – classified the stream network
+6. Stream to Feature – converted raster streams into vector lines
+
+The 50,000 threshold was chosen to highlight major drainage paths while filtering out minor noise. I adjusted this value until the resulting stream network reasonably matched known hydrography.
+
+## Watershed Delineation
+
+With the stream network established, I moved on to watershed analysis.
+
+I started by selecting a single farm (Perrault Farms) as a test case. Before running the watershed tool, I needed to make sure the outlet point was actually aligned with the modeled flow network. When placing points manually, they’re usually slightly off, which can throw off the results.
+
+To fix this, I used the Snap Pour Point tool to shift the farm location to the nearest high-flow cell in the accumulation raster. This ensured the point represented a true drainage outlet.
+
+With that corrected point, I used the Watershed tool to identify the full upstream area contributing flow to that location. Using the flow direction raster, the tool traces all cells that drain into the selected point and defines the watershed boundary.
 
 <img width="530" height="360" alt="Screenshot 2024-11-30 131936" src="https://github.com/user-attachments/assets/9291f011-4a33-4716-8da7-ad3db4a66f6b" />
 
@@ -77,10 +97,35 @@ This result showed me that all of the farms in Yakima Valley were all within the
 
 <img width="530" height="360" alt="Screenshot 2024-11-30 135810" src="https://github.com/user-attachments/assets/d26825a4-aed8-4c6e-b71c-06a5d928dcf1" />
 
+## Results & Observations
 
-My final question was concerning altitude to see which direction was downstream. I found a helpful layer on the Yakima County GIS portal, from a project titled 'groundwater management area' that had the altitude. I had to isolate the individual layer, and achieved my final image. 
+The watershed output showed that the analyzed farm falls within a larger, connected drainage system. Based on additional spatial context (farm distribution, stream networks, and elevation), this suggests that many of the hop farms in Yakima Valley likely share interconnected water systems.
+
+To better understand flow direction, I incorporated an elevation layer from the Yakima County GIS portal. This made it clear how water moves from higher elevation farms to lower ones across the valley.
 
 <img width="530" height="360" alt="Screenshot 2024-11-30 100158" src="https://github.com/user-attachments/assets/852b9cc8-a000-41ad-88ab-43ef59db51db" />
 
 <img width="530" height="360" alt="Screenshot 2024-11-30 140528" src="https://github.com/user-attachments/assets/d4354373-1222-4d5b-b973-7764c659fa8c" />
+
+## Key Takeaways
+
+- Farms in the region are not isolated in terms of water systems
+- Upstream activity has direct implications for downstream farms
+- Water quality and availability should be considered at a watershed level, not just at individual sites
+
+If a downstream farm experiences water quality issues, this type of analysis makes it possible to trace potential sources upstream.
+
+## Limitations
+
+- The watershed analysis was demonstrated using a single farm as a representative example
+- Farm locations were manually geocoded, which may introduce minor positional error
+- The flow accumulation threshold influences the derived stream network
+- The model does not account for seasonal variation or groundwater dynamics
+
+## Final Thoughts 
+
+This project helped me understand how raster-based hydrology tools can be used to model real-world systems. More importantly, it showed how GIS can connect environmental processes to practical decisions, especially in agriculture where water management is critical.
+
+If expanded further, this analysis could be applied across multiple farms to better support regional water planning and conservation efforts.
+
 
