@@ -69,6 +69,8 @@ The workflow was:
 
 The 50,000 threshold was chosen to highlight major drainage paths while filtering out minor noise. I adjusted this value until the resulting stream network reasonably matched known hydrography.
 
+To check this, I compared the DEM-derived stream network against the state hydrography layer. The major channels lined up well, which gave me confidence that the flow accumulation threshold was capturing realistic drainage patterns, even though smaller streams weren’t always represented.
+
 ## Watershed Delineation
 
 With the stream network established, I moved on to watershed analysis.
