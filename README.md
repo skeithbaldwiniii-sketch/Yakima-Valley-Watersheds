@@ -50,12 +50,12 @@ Seeing all of these farms displayed in conjunction with the streams layer, there
 
 Next, in an attempt to practice raster analysis, I downloaded the DEM of the area from the National Map. 
 The tools I used were as follows:
-1. Fill
-2. Flow Direction
-3. Flow Accumulation
-4. Raster Calculator (>= 50000)
-5. Stream Order
-6. Stream to Feature
+1. Fill - this fills gaps in the DEM, I didn't specify Z value because everything needs to be filled
+2. Flow Direction - I used a D8 flow direction type, which turned every cell into a value from 1 to 8, where the number refers to a directional arrow from that cell. I used the raster produced from the fill step as the input raster. 
+3. Flow Accumulation - This calculates a number for each cell based on the accumulated weight of cells flowing downflow into it. The input rasteer I used was produced in running the flow direction step
+4. Raster Calculator (>= 50000) - this created a binary raster for where accumulation points were above 50000, and places where it was not. Input raster was the one produced by the Flow Accumulation step.
+5. Stream Order - This gave me a raster made up of jagged line segments representing rivers. This one requires both the raster produced by the raster calculator step, and the flow direction raster. 
+6. Stream to Feature - this step turns the raster produced by the Stream Oder tool into polylines.
 These series of tools providied me a layer of the streams by using the DEM raster. With this in hand, I can determine the watershed within the valley. To do this, I picked one farm, I just went with Perrault Farms, and used the create layer from selection tool to isolate the individual point. I then used the snap pour point tool, which gave me a pour point to apply to the watershed tool, which gave me a picture of the entire watershed.
 
 <img width="530" height="360" alt="Screenshot 2024-11-30 131936" src="https://github.com/user-attachments/assets/9291f011-4a33-4716-8da7-ad3db4a66f6b" />
